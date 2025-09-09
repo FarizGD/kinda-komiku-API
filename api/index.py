@@ -14,33 +14,31 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 
 def extract_image_urls_from_html(html, base_url=None):
     soup = BeautifulSoup(html, "html.parser")
+
+    # Komiku chapter pages put manga images inside a container with class "baca"
+    baca_div = soup.find("div", class_="baca")
     imgs = []
-    # common patterns: <img src="..."> or lazy-loaded data-src / data-lazy
-    for tag in soup.find_all('img'):
-        for attr in ('src', 'data-src', 'data-lazy', 'data-original', 'data-image'):
-            url = tag.get(attr)
-            if url and url.strip():
+
+    if baca_div:
+        for tag in baca_div.find_all("img"):
+            url = tag.get("src") or tag.get("data-src")
+            if url:
                 imgs.append(url.strip())
-    # also look for javascript page lists or JSON arrays in the page
-    # fallback: find <meta property="og:image"> (cover)
-    if not imgs:
-        og = soup.find('meta', property='og:image')
-        if og and og.get('content'):
-            imgs.append(og.get('content'))
-    # normalize relative URLs if base_url present
+
+    # normalize URLs
     if base_url:
         from urllib.parse import urljoin
         imgs = [urljoin(base_url, u) for u in imgs]
-    # filter only image-like urls and remove duplicates while preserving order
-    seen = set()
-    filtered = []
+
+    # remove duplicates and keep only image formats
+    seen, filtered = set(), []
     for u in imgs:
-        low = u.split('?')[0].lower()
-        if any(low.endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.webp')) and u not in seen:
+        low = u.split("?")[0].lower()
+        if any(low.endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".webp")) and u not in seen:
             filtered.append(u)
             seen.add(u)
-    return filtered
 
+    return filtered
 
 @app.route('/api', methods=['GET'])
 def index():
