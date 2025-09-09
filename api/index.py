@@ -32,10 +32,15 @@ def extract_image_urls_from_html(html, base_url=None):
         from urllib.parse import urljoin
         imgs = [urljoin(base_url, u) for u in imgs]
 
-    # filter image formats and deduplicate
+        # filter image formats and deduplicate
     seen, filtered = set(), []
     for u in imgs:
         low = u.split("?")[0].lower()
+
+        # Only accept real comic pages (Komiku usually stores them under /manga/)
+        if "/manga/" not in low:
+            continue
+
         if any(low.endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".webp")) and u not in seen:
             filtered.append(u)
             seen.add(u)
