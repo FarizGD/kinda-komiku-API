@@ -42,15 +42,14 @@ def extract_image_urls_from_html(html, base_url=None):
     return filtered
 
 
-@app.route('/', methods=['GET'])
+@app.route('/api', methods=['GET'])
 def index():
     return jsonify({
-        "message": "Vercel Komiku Downloader - GET /?url=<chapter_url> (returns application/pdf)",
-        "usage_example": "/?url=https://komiku.id/your-chapter-url"
+        "message": "Vercel Komiku Downloader - GET /api/download?url=<chapter_url>",
+        "usage_example": "/api/download?url=https://komiku.id/your-chapter-url"
     })
 
-
-@app.route('/download', methods=['GET'])
+@app.route('/api/download', methods=['GET'])
 def download_pdf():
     chapter_url = request.args.get('url')
     if not chapter_url:
