@@ -15,22 +15,24 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 def extract_image_urls_from_html(html, base_url=None):
     soup = BeautifulSoup(html, "html.parser")
 
-    # Komiku chapter pages put manga images inside a container with class "baca"
-    baca_div = soup.find("div", class_="baca")
+    baca_div = soup.find("div", class_="baca") or soup
     imgs = []
 
-    if baca_div:
-        for tag in baca_div.find_all("img"):
-            url = tag.get("src") or tag.get("data-src")
-            if url:
-                imgs.append(url.strip())
+    for tag in baca_div.find_all("img"):
+        url = None
+        # Komiku often uses lazy-loading
+        for attr in ("src", "data-src", "data-lazy", "data-original"):
+            if tag.get(attr):
+                url = tag[attr].strip()
+                break
+        if url:
+            imgs.append(url)
 
-    # normalize URLs
     if base_url:
         from urllib.parse import urljoin
         imgs = [urljoin(base_url, u) for u in imgs]
 
-    # remove duplicates and keep only image formats
+    # filter image formats and deduplicate
     seen, filtered = set(), []
     for u in imgs:
         low = u.split("?")[0].lower()
@@ -39,7 +41,7 @@ def extract_image_urls_from_html(html, base_url=None):
             seen.add(u)
 
     return filtered
-
+    
 @app.route('/api', methods=['GET'])
 def index():
     return jsonify({
